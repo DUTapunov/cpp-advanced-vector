@@ -301,7 +301,9 @@ void Test4() {
         Obj::ResetCounters();
         Vector<Obj> v(SIZE);
         Obj o{ID};
-        v.PushBack(o);
+        //v.PushBack(o);
+        v.EmplaceBack(o);
+
         assert(v.Size() == SIZE + 1);
         assert(v.Capacity() == SIZE * 2);
         assert(v[SIZE].id == ID);
@@ -314,7 +316,9 @@ void Test4() {
     {
         Obj::ResetCounters();
         Vector<Obj> v(SIZE);
-        v.PushBack(Obj{ID});
+        //v.PushBack(Obj{ID});
+        v.EmplaceBack(Obj{ID});
+
         assert(v.Size() == SIZE + 1);
         assert(v.Capacity() == SIZE * 2);
         assert(v[SIZE].id == ID);
@@ -326,7 +330,8 @@ void Test4() {
     {
         Obj::ResetCounters();
         Vector<Obj> v;
-        v.PushBack(Obj{ID});
+        //v.PushBack(Obj{ID});
+        v.EmplaceBack(Obj{ID});
         v.PopBack();
         assert(v.Size() == 0);
         assert(v.Capacity() == 1);
@@ -338,7 +343,9 @@ void Test4() {
         assert(v.Size() == v.Capacity());
         // Операция PushBack существующего элемента вектора должна быть безопасна
         // даже при реаллокации памии
-        v.PushBack(v[0]);
+        //v.PushBack(v[0]);
+        v.EmplaceBack(v[0]);
+
         assert(v[0].IsAlive());
         assert(v[1].IsAlive());
     }
@@ -347,7 +354,9 @@ void Test4() {
         assert(v.Size() == v.Capacity());
         // Операция PushBack для перемещения существующего элемента вектора должна быть безопасна
         // даже при реаллокации памяти
-        v.PushBack(std::move(v[0]));
+        //v.PushBack(std::move(v[0]));
+        v.EmplaceBack(std::move(v[0]));
+
         assert(v[0].IsAlive());
         assert(v[1].IsAlive());
     }
