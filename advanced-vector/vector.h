@@ -26,8 +26,9 @@ public:
     RawMemory& operator=(RawMemory&& rhs) noexcept {
         
         if (this != &rhs) {
-            buffer_ = std::move(rhs.buffer_);
-            capacity_ = std::move(rhs.capacity_);
+            std::swap(capacity_,rhs.buffer_);
+            //buffer_ = std::move(rhs.buffer_);
+            //capacity_ = std::move(rhs.capacity_);
             rhs.buffer_ = nullptr;
             rhs.capacity_ = 0;
         }
@@ -144,42 +145,23 @@ public:
         return (begin() + position);
     }
     
-    template <typename Type>
-    void PushBack(Type&& value);
+    //template <typename Type>
+    //void PushBack(Type&& value);
  
     void PopBack() {
         assert(size_);
         std::destroy_at(data_.GetAddress() + size_ - 1);
         --size_;
     }
+
+
     
     Vector& operator=(const Vector& other) {
         
         if (this != &other) {
             
             if (other.size_ <= data_.Capacity()) {
-                
-                if (size_ <= other.size_) {
-                    
-                    std::copy(other.data_.GetAddress(), 
-                              other.data_.GetAddress() + size_, 
-                              data_.GetAddress());
-                    
-                    std::uninitialized_copy_n(other.data_.GetAddress() + size_, 
-                                              other.size_ - size_, 
-                                              data_.GetAddress() + size_);
-                } else {
-                    
-                    std::copy(other.data_.GetAddress(), 
-                              other.data_.GetAddress() + other.size_,
-                              data_.GetAddress());
-                    
-                    std::destroy_n(data_.GetAddress() + other.size_, 
-                                   size_ - other.size_);
-                }
-                
-                size_ = other.size_; 
-                
+                appropriation(other);
             } else {              
                 Vector other_copy(other);
                 Swap(other_copy);
@@ -197,33 +179,27 @@ public:
 private:
     RawMemory<T> data_;
     size_t size_ = 0;
-};
- 
-template <typename T>
-template <typename Type>
-void Vector<T>::PushBack(Type&& value) {
- 
-    if (data_.Capacity() <= size_) {
-    
-        RawMemory<T> new_data(size_ == 0 ? 1 : size_ * 2);
-        
-        new (new_data.GetAddress() + size_) T(std::forward<Type>(value));
-        
-        if constexpr (std::is_nothrow_move_constructible_v<T> || !std::is_copy_constructible_v<T>) {
-            std::uninitialized_move_n(data_.GetAddress(), size_, new_data.GetAddress());
+    void appropriation(const Vector& other)
+    {
+        if (size_ <= other.size_) {
+            std::copy(other.data_.GetAddress(), 
+            other.data_.GetAddress() + size_, 
+            data_.GetAddress());
+            std::uninitialized_copy_n(other.data_.GetAddress() + size_, 
+                                      other.size_ - size_, 
+                                      data_.GetAddress() + size_);
         } else {
-            std::uninitialized_copy_n(data_.GetAddress(), size_, new_data.GetAddress());
+                    
+            std::copy(other.data_.GetAddress(), 
+            other.data_.GetAddress() + other.size_,
+            data_.GetAddress());
+            std::destroy_n(data_.GetAddress() + other.size_, 
+            size_ - other.size_);
         }
-        
-        std::destroy_n(data_.GetAddress(), size_);
-        data_.Swap(new_data);
-        
-    } else {
-        new (data_.GetAddress() + size_) T(std::forward<Type>(value));
-    }
-    
-    size_++;
-}
+        size_ = other.size_; 
+
+    }    
+};
  
 template <typename T>
 template <typename... Args>
@@ -238,7 +214,12 @@ T& Vector<T>::EmplaceBack(Args&&... args) {
         if constexpr (std::is_nothrow_move_constructible_v<T> || !std::is_copy_constructible_v<T>) {
             std::uninitialized_move_n(data_.GetAddress(), size_, new_data.GetAddress());
         } else {
-            std::uninitialized_copy_n(data_.GetAddress(), size_, new_data.GetAddress());
+            try {
+                std::uninitialized_copy_n(data_.GetAddress(), size_, new_data.GetAddress());
+            }catch (...) {
+                operator delete (new_data);
+                //throw;
+            }
         }
  
         std::destroy_n(data_.GetAddress(), size_);
@@ -268,8 +249,15 @@ typename Vector<T>::iterator Vector<T>::Emplace(const_iterator pos, Args&&... ar
             std::uninitialized_move_n(data_.GetAddress() + position, size_ - position, new_data.GetAddress() + position + 1);
             
         } else {
-            std::uninitialized_copy_n(data_.GetAddress(), position, new_data.GetAddress());
-            std::uninitialized_copy_n(data_.GetAddress() + position, size_ - position, new_data.GetAddress() + position + 1);
+            try
+            {
+                std::uninitialized_copy_n(data_.GetAddress(), position, new_data.GetAddress());
+                std::uninitialized_copy_n(data_.GetAddress() + position, size_ - position, new_data.GetAddress() + position + 1);
+            }
+            catch(...)
+            {
+                operator delete (new_data);
+            }
         }
  
         std::destroy_n(data_.GetAddress(), size_);
@@ -283,9 +271,19 @@ typename Vector<T>::iterator Vector<T>::Emplace(const_iterator pos, Args&&... ar
                     
                 T new_s(std::forward<Args>(args)...);                   
                 new (end()) T(std::forward<T>(data_[size_ - 1]));
-                    
-                std::move_backward(begin() + position, end() - 1, end());                   
-                *(begin() + position) = std::forward<T>(new_s);
+                try
+                {
+                    std::move_backward(begin() + position, end() - 1, end());                   
+                    //*(begin() + position) = std::forward<T>(new_s);
+                    *(begin() + position) = std::move<T>(new_s);
+
+                }
+                catch(const std::exception& e)
+                {
+                    operator delete (new_s);
+                }
+                
+
                     
             } else {
                 new (end()) T(std::forward<Args>(args)...);
