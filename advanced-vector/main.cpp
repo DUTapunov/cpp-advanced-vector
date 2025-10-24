@@ -7,6 +7,7 @@
 namespace {
 
 // "Магическое" число, используемое для отслеживания живости объекта
+// Обновление от 15.16
 inline const uint32_t DEFAULT_COOKIE = 0xdeadbeef;
 
 struct TestObj {
