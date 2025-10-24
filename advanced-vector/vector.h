@@ -28,6 +28,7 @@ public:
         if (this != &rhs) {
             std::swap(buffer_,rhs.buffer_);
             std::swap(capacity_,rhs.capacity_);
+            // Исправил и залил новую версию 
             //buffer_ = std::move(rhs.buffer_);
             //capacity_ = std::move(rhs.capacity_);
             //rhs.buffer_ = nullptr;
