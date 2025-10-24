@@ -224,8 +224,9 @@ T& Vector<T>::EmplaceBack(Args&&... args) {
             try {
                 std::uninitialized_copy_n(data_.GetAddress(), size_, new_data.GetAddress());
             }catch (...) {
-                new_data.~RawMemory();
+                std::destroy_n(new_data.GetAddress(), size_);
                 throw;
+                //new_data.~RawMemory();
                 //operator delete (new_data);
             }
         }
@@ -263,9 +264,11 @@ typename Vector<T>::iterator Vector<T>::Emplace(const_iterator pos, Args&&... ar
             }
             catch(...)
             {
-                new_data.~RawMemory();
+                std::destroy_n(new_data.GetAddress(), size_);
                 throw;
+                //new_data.~RawMemory();
                 //operator delete (new_data);
+
             }
         }
  
