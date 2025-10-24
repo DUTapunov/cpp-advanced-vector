@@ -6,7 +6,7 @@
 #include <new>
 #include <utility>
 #include <iterator>
- 
+ // // Обновление от 15.16
 template <typename T>
 class RawMemory {
 public:
